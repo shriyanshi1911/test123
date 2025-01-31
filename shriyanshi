@@ -1,0 +1,74 @@
+Sample HTML Code (Login Page):
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hospital Portal Login</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="login-container">
+    <h2>Login to Hospital Portal</h2>
+    <form action="/login" method="POST">
+      <input type="email" name="email" placeholder="Email" required>
+      <input type="password" name="password" placeholder="Password" required>
+      <button type="submit">Login</button>
+    </form>
+  </div>
+</body>
+</html>
+
+Sample Backend (Node.js API):
+
+const express = require('express');
+const mysql = require('mysql');
+const multer = require('multer');
+const app = express();
+
+// Database connection
+const db = mysql.createConnection({
+  host: 'localhost',
+  user: 'root',
+  password: '',
+  database: 'hospital_portal'
+});
+
+// File upload setup
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, 'uploads/');
+  },
+  filename: function (req, file, cb) {
+    cb(null, file.fieldname + '-' + Date.now());
+  }
+});
+const upload = multer({ storage: storage });
+
+// Doctor uploads report
+app.post('/upload-report', upload.single('report'), (req, res) => {
+  const patientId = req.body.patient_id;
+  const reportFile = req.file.path;
+  
+  const query = INSERT INTO reports (patient_id, report_file, date_uploaded) VALUES (?, ?, NOW());
+  db.query(query, [patientId, reportFile], (err, result) => {
+    if (err) throw err;
+    res.send('Report uploaded successfully.');
+  });
+});
+
+// Patient views reports
+app.get('/reports/:patient_id', (req, res) => {
+  const patientId = req.params.patient_id;
+  
+  const query = SELECT * FROM reports WHERE patient_id = ?;
+  db.query(query, [patientId], (err, results) => {
+    if (err) throw err;
+    res.json(results);
+  });
+});
+
+app.listen(3000, () => {
+  console.log('Server started on http://localhost:3000');
+});
